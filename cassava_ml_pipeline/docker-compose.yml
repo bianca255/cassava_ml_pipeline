@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000-8010:8000"   # allows scaling with --scale api=N
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+
+# ---------------------------------------------------------------------------
+# Scaling for the Locust flood-request demo:
+#   docker compose up --build --scale api=1
+#   docker compose up --build --scale api=2
+#   docker compose up --build --scale api=4
+# then point Locust at whichever container/port (or a load balancer such as
+# nginx/traefik in front of the api service) and record latency at each
+# replica count for the README results table.
+# ---------------------------------------------------------------------------
