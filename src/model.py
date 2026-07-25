@@ -29,19 +29,12 @@ from sklearn.metrics import (
 from src.preprocessing import CLASS_NAMES
 
 MODEL_DIR = "models"
-# SavedModel format (.tf) -- a directory, not a single file. This matches the
-# assignment spec's required model file types (.pkl / .tf / .h5).
-MODEL_PATH = os.path.join(MODEL_DIR, "cassava_efficientnet.tf")
+MODEL_PATH = os.path.join(MODEL_DIR, "cassava_efficientnet.h5")
 METRICS_PATH = os.path.join(MODEL_DIR, "latest_metrics.json")
 NUM_CLASSES = len(CLASS_NAMES)
 
 
 def build_model(input_shape=(224, 224, 3), fine_tune_at: int = 200) -> tf.keras.Model:
-    """
-    Builds an EfficientNetB0-based transfer learning model with a custom
-    classification head, dropout + L2 regularization, and a partially
-    fine-tuned base.
-    """
     base_model = EfficientNetB0(weights="imagenet", include_top=False, input_shape=input_shape)
 
     for layer in base_model.layers[:fine_tune_at]:
@@ -71,17 +64,13 @@ def train_model(model, train_gen, val_gen, epochs: int = 15):
     callbacks = [
         EarlyStopping(monitor="val_loss", patience=4, restore_best_weights=True),
         ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=2, min_lr=1e-7),
-        ModelCheckpoint(MODEL_PATH, monitor="val_loss", save_best_only=True, save_format="tf"),
+        ModelCheckpoint(MODEL_PATH, monitor="val_loss", save_best_only=True),
     ]
     history = model.fit(train_gen, validation_data=val_gen, epochs=epochs, callbacks=callbacks)
     return history
 
 
 def evaluate_model(model, test_gen) -> dict:
-    """
-    Computes at least 4 evaluation metrics: accuracy, precision, recall,
-    F1 (macro-averaged for multi-class), plus loss.
-    """
     y_true = test_gen.classes
     y_prob = model.predict(test_gen)
     y_pred = np.argmax(y_prob, axis=1)
@@ -107,10 +96,9 @@ def evaluate_model(model, test_gen) -> dict:
     return metrics
 
 
-def save_model_as_tf(model, path: str = MODEL_PATH) -> str:
-    """Explicitly saves the model in TensorFlow SavedModel (.tf) format."""
+def save_model_as_h5(model, path: str = MODEL_PATH) -> str:
     os.makedirs(MODEL_DIR, exist_ok=True)
-    model.save(path, save_format="tf")
+    model.save(path)
     return path
 
 
@@ -131,12 +119,6 @@ def get_latest_metrics() -> dict:
 
 
 def retrain(epochs: int = 5):
-    """
-    Full retraining entry point used by the API's /retrain endpoint.
-    Re-reads data/train + data/test (which now include newly uploaded
-    images), fine-tunes from the existing saved model if present
-    (otherwise builds fresh), evaluates, and overwrites the model file.
-    """
     from src.preprocessing import get_data_generators
 
     train_gen, val_gen, test_gen = get_data_generators()
@@ -147,6 +129,6 @@ def retrain(epochs: int = 5):
         model = build_model()
 
     train_model(model, train_gen, val_gen, epochs=epochs)
-    save_model_as_tf(model)  # ensure final weights are persisted in .tf format
+    save_model_as_h5(model)
     metrics = evaluate_model(model, test_gen)
     return metrics
