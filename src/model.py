@@ -125,6 +125,11 @@ def retrain(epochs: int = 5):
 
     if os.path.exists(MODEL_PATH):
         model = tf.keras.models.load_model(MODEL_PATH)
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+            loss="categorical_crossentropy",
+            metrics=["accuracy"],
+        )
     else:
         model = build_model()
 
