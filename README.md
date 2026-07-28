@@ -130,20 +130,21 @@ reflects single-instance performance under concurrent load.
 
 | Endpoint | Requests | Failures | Median (ms) | 95th %ile (ms) | RPS |
 |---|---|---|---|---|---|
-| POST /predict | 395 | 5 | 4000 | 8900 | 0.9 |
-| GET /uptime | 153 | 1 | 6300 | 12000 | 0.4 |
-| GET /visualizations/class-distribution | 85 | 0 | 6200 | 11000 | 0.2 |
-| **Aggregated** | **700** | **72*** | **4700** | **11000** | **1.6** |
+| GET /metrics | 19 | 0 | 4300 | 14000 | 0.1 |
+| POST /predict | 135 | 0 | 4100 | 34000 | 0.9 |
+| GET /uptime | 53 | 0 | 5900 | 13000 | 0.5 |
+| GET /visualizations/class-distribution | 26 | 0 | 4900 | 16000 | 0.1 |
+| **Aggregated** | **233** | **0** | **4300** | **16000** | **1.6** |
 
-\* Most aggregated failures came from `/metrics` returning 404 during an earlier test run,
-before `models/latest_metrics.json` was committed to the repo — this has since been fixed
-and confirmed working. `/predict`, the core endpoint, had a 98.7% success rate.
+**Zero failures across all 233 requests**, including `/metrics` (previously fixed after an
+earlier bug where evaluation metrics weren't committed to the repo).
 
 **Test conditions:** 10 concurrent users, ramp-up rate of 2 users/second, run for ~2 minutes
 against Render's free-tier instance (shared CPU, 512MB RAM, no GPU). Latencies are elevated
 compared to what a paid/GPU-backed instance would show — this is expected given CPU-only
-TensorFlow inference on a resource-constrained free tier, and cold-start effects if the
-instance had recently spun down from inactivity.
+TensorFlow inference on a resource-constrained free tier, plus occasional cold-start effects
+if the instance had recently spun down from inactivity (visible in the wide gap between
+median and 95th-percentile `/predict` latency: 4.1s vs 34s).
 
 To reproduce locally:
 ```bash
