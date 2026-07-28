@@ -1,8 +1,7 @@
 # Cassava Leaf Disease Classification 
 
 ## Video Demo
-📺 [YouTube Link — ADD HERE]
-*(Demo covers: single-image prediction, bulk upload, and triggering retraining, camera on.)*
+https://youtu.be/5XZECtpiK-g
 
 ## Live URLs
 - API (Swagger docs): https://cassava-api-0liy.onrender.com/docs
